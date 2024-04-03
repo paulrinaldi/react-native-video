@@ -6,8 +6,12 @@ import Foundation
 #endif
 import Promises
 import React
+import OSLog
 
 // MARK: - RCTVideo
+
+@available(iOS 14.0, *)
+let defaultLog = Logger()
 
 class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverHandler {
     private var _player: AVPlayer?
@@ -212,25 +216,45 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
 
     @objc
     func applicationWillResignActive(notification _: NSNotification!) {
-        if _playInBackground || _playWhenInactive || _paused { return }
+        if _playInBackground || _playWhenInactive || _paused {
+            return
+        }
 
+        if #available(iOS 14.0, *) {
+            defaultLog.log("pause and set rate to 0.0")
+        }
         _player?.pause()
         _player?.rate = 0.0
     }
 
     @objc
     func applicationDidBecomeActive(notification _: NSNotification!) {
-        if _playInBackground || _playWhenInactive || _paused { return }
+        if _playInBackground || _playWhenInactive || _paused { 
+            if #available(iOS 14.0, *) {
+                defaultLog.log("returning early so to let rate continue")
+            }
+            return
+        }
 
         // Resume the player or any other tasks that should continue when the app becomes active.
+        if #available(iOS 14.0, *) {
+            defaultLog.log("setting play and rate in app did become active")
+        }
         _player?.play()
         _player?.rate = _rate
     }
 
     @objc
     func applicationDidEnterBackground(notification _: NSNotification!) {
+        if #available(iOS 14.0, *) {
+            defaultLog.log("applicationDidEnterBackground")
+        }
         if !_playInBackground {
             // Needed to play sound in background. See https://developer.apple.com/library/ios/qa/qa1668/_index.html
+            if #available(iOS 14.0, *){
+                defaultLog.log("niling player")
+            }
+            
             _playerLayer?.player = nil
             _playerViewController?.player = nil
         }
@@ -616,6 +640,9 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
                     _imaAdsManager.getAdsManager()?.pause()
                 #endif
             } else {
+                if #available(iOS 14.0, *) {
+                    defaultLog.log("setting paused")
+                }
                 _player?.pause()
                 _player?.rate = 0.0
             }
@@ -630,6 +657,9 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
                 if #available(iOS 10.0, *), !_automaticallyWaitsToMinimizeStalling {
                     _player?.playImmediately(atRate: _rate)
                 } else {
+                    if #available(iOS 14.0, *) {
+                        defaultLog.log("play and set rate")
+                    }
                     _player?.play()
                     _player?.rate = _rate
                 }
@@ -676,6 +706,9 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
 
     @objc
     func setRate(_ rate: Float) {
+        if #available(iOS 14.0, *) {
+            defaultLog.log("setRate(\(rate)")
+        }
         _rate = rate
         applyModifiers()
     }

@@ -938,10 +938,10 @@ PODS:
   - React-Mapbuffer (0.74.0-rc.4):
     - glog
     - React-debug
-  - react-native-video (6.0.0-beta.6):
+  - react-native-video (6.0.0-beta.7):
     - React-Core
-    - react-native-video/Video (= 6.0.0-beta.6)
-  - react-native-video/Video (6.0.0-beta.6):
+    - react-native-video/Video (= 6.0.0-beta.7)
+  - react-native-video/Video (6.0.0-beta.7):
     - PromisesSwift
     - React-Core
   - React-nativeconfig (0.74.0-rc.4)
@@ -1391,7 +1391,7 @@ SPEC CHECKSUMS:
   React-jsitracing: 50e3ea936a199a2a7fcab922f156507c97f0b88c
   React-logger: 6004e0cf41b7e9714ca26b1648e5d76fcfd638b5
   React-Mapbuffer: 9b163fa28e549d5f36f89a39a1145fcaf262d0d0
-  react-native-video: dc3118548cf8864a83f57df4345cf6c692402e8f
+  react-native-video: 6370f49e86bfd1874b77979e7b369cdf2359b4fd
   React-nativeconfig: 3948d6fb6acfec364625cffbb1cf420346fb37c0
   React-NativeModulesApple: 46745aba687c1019983d56b6d5fa39265152f64f
   React-perflogger: 0d62c0261b6fd3920605850de91abc8135dd3ee9
@@ -1417,8 +1417,8 @@ SPEC CHECKSUMS:
   ReactCommon: 7dcfe361142057b6411ca1e86e5dae900dda59ba
   RNCPicker: 0991c56da7815c0cf946d6f63cf920b25296e5f6
   SocketRocket: abac6f5de4d4d62d24e11868d7a2f427e0ef940d
-  Yoga: e08111794822bc315de88571845a3dd6fa5f2183
+  Yoga: 1f95b9ba06d539ce454c4819d30fd8d9c6dad824
 
 PODFILE CHECKSUM: bbe1bd5f521b6b9366288dbaf8af1cec85c0a95a
 
-COCOAPODS: 1.13.0
+COCOAPODS: 1.15.2

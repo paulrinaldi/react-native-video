@@ -36,6 +36,7 @@ import Video, {
   OnTextTrackDataChangedData,
   TextTrackType,
   ISO639_1,
+  SelectedTrackType,
 } from 'react-native-video';
 import ToggleControl from './ToggleControl';
 import MultiValueControl, {
@@ -300,6 +301,8 @@ class VideoPlayer extends Component {
   };
 
   onAudioFocusChanged = (event: OnAudioFocusChangedData) => {
+    console.log('onAudioFocusChanged');
+    
     this.setState({paused: !event.hasAudioFocus});
   };
 
@@ -775,7 +778,7 @@ class VideoPlayer extends Component {
             this.video = ref;
           }}
           source={this.srcList[this.state.srcListId]}
-          textTracks={this.srcList[this.state.srcListId]?.textTracks}
+          // textTracks={this.srcList[this.state.srcListId]?.textTracks}
           adTagUrl={this.srcList[this.state.srcListId]?.adTagUrl}
           drm={this.srcList[this.state.srcListId]?.drm}
           style={viewStyle}
@@ -801,9 +804,10 @@ class VideoPlayer extends Component {
           onReadyForDisplay={this.onReadyForDisplay}
           onBuffer={this.onVideoBuffer}
           repeat={this.state.loop}
-          selectedTextTrack={this.state.selectedTextTrack}
+          // selectedTextTrack={{type: SelectedTrackType.INDEX, value: 0}}
           selectedAudioTrack={this.state.selectedAudioTrack}
-          playInBackground={false}
+          playInBackground={true}
+          ignoreSilentSwitch='ignore'
           preventsDisplaySleepDuringVideoPlayback={true}
         />
       </TouchableOpacity>
