@@ -263,6 +263,9 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
     @objc
     func applicationWillEnterForeground(notification _: NSNotification!) {
         self.applyModifiers()
+        if #available(iOS 14.0, *) {
+            defaultLog.log("applicationWillEnterForeground")
+        }
         if !_playInBackground {
             _playerLayer?.player = _player
             _playerViewController?.player = _player
@@ -434,6 +437,9 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
 
                     self._playerObserver.player = self._player
                     self.applyModifiers()
+                    if #available(iOS 14.0, *) {
+                        defaultLog.log("setSrc")
+                    }
                     self._player?.actionAtItemEnd = .none
 
                     if #available(iOS 10.0, *) {
@@ -580,6 +586,9 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
     func setPreventsDisplaySleepDuringVideoPlayback(_ preventsDisplaySleepDuringVideoPlayback: Bool) {
         _preventsDisplaySleepDuringVideoPlayback = preventsDisplaySleepDuringVideoPlayback
         self.applyModifiers()
+        if #available(iOS 14.0, *) {
+            defaultLog.log("setPreventsDisplaySleepDuringVideoPlayback")
+        }
     }
 
     @objc
@@ -1050,6 +1059,9 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
             _playerViewController = nil
             _playerObserver.playerViewController = nil
             self.applyModifiers()
+            if #available(iOS 14.0, *) {
+                defaultLog.log("videoPlayerViewControllerDidDismiss")
+            }
 
             onVideoFullscreenPlayerDidDismiss?(["target": reactTag as Any])
         }
@@ -1306,6 +1318,9 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
             self._videoLoadStarted = false
             self._playerObserver.attachPlayerEventListeners()
             self.applyModifiers()
+            if #available(iOS 14.0, *) {
+                defaultLog.log("handleReadyToPlay")
+            }
         }
     }
 
@@ -1447,6 +1462,9 @@ class RCTVideo: UIView, RCTVideoPlayerViewControllerDelegate, RCTPlayerObserverH
                 completionHandler: { [weak self] _ in
                     guard let self else { return }
                     self.applyModifiers()
+                    if #available(iOS 14.0, *) {
+                        defaultLog.log("handlePlayerItemDidReachEnd")
+                    }
                 }
             )
         } else {
