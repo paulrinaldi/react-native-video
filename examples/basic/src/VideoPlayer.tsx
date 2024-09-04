@@ -207,9 +207,10 @@ const VideoPlayer: FC<Props> = ({}) => {
   };
 
   const onEnd = () => {
-    if (!repeat) {
-      channelUp();
-    }
+    // if (!repeat) {
+    //   channelUp();
+    // }
+    // videoRef.current?.pause();
   };
 
   const onPlaybackRateChange = (data: OnPlaybackRateChangeData) => {
@@ -236,7 +237,7 @@ const VideoPlayer: FC<Props> = ({}) => {
       {(srcList[srcListId] as AdditionalSourceInfo)?.noView ? null : (
         <TouchableOpacity style={viewStyle}>
           <Video
-            showNotificationControls={showNotificationControls}
+            showNotificationControls={true}
             ref={videoRef}
             source={currentSrc as ReactVideoSource}
             textTracks={additional?.textTracks}
@@ -271,7 +272,9 @@ const VideoPlayer: FC<Props> = ({}) => {
             selectedTextTrack={selectedTextTrack}
             selectedAudioTrack={selectedAudioTrack}
             selectedVideoTrack={selectedVideoTrack}
-            playInBackground={false}
+            playInBackground={true}
+            playWhenInactive={true}
+            ignoreSilentSwitch='ignore'
             bufferConfig={{
               ...bufferConfig,
               cacheSizeMB: useCache ? 200 : 0,

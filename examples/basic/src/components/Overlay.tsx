@@ -200,7 +200,11 @@ const _Overlay = forwardRef<VideoRef, Props>((props, ref) => {
 
   const toggleCache = () => setUseCache(prev => !prev);
 
-  const togglePause = () => setPaused(prev => !prev);
+  const togglePause = () => setPaused(prev => {
+    console.log('prev=(pause:', prev);
+    
+    return !prev
+  });
 
   const toggleRepeat = () => setRepeat(prev => !prev);
 
