@@ -257,7 +257,7 @@ const VideoPlayer: FC<Props> = ({}) => {
       {(srcList[srcListId] as AdditionalSourceInfo)?.noView ? null : (
         <TouchableOpacity style={viewStyle}>
           <Video
-            showNotificationControls={showNotificationControls}
+            showNotificationControls={true}
             ref={videoRef}
             source={currentSrc as ReactVideoSource}
             adTagUrl={additional?.adTagUrl}
@@ -291,7 +291,7 @@ const VideoPlayer: FC<Props> = ({}) => {
             selectedTextTrack={selectedTextTrack}
             selectedAudioTrack={selectedAudioTrack}
             selectedVideoTrack={selectedVideoTrack}
-            playInBackground={false}
+            playInBackground={true}
             bufferConfig={_bufferConfig}
             preventsDisplaySleepDuringVideoPlayback={true}
             renderLoader={_renderLoader}
