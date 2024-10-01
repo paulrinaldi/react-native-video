@@ -12,6 +12,7 @@ import android.os.Binder
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.media.AudioManager
 import androidx.core.app.NotificationCompat
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
@@ -46,6 +47,15 @@ class VideoPlaybackService : MediaSessionService() {
         .setSessionCommand(commandSeekBackward)
         .setIconResId(androidx.media3.ui.R.drawable.exo_notification_rewind)
         .build()
+
+    private lateinit var audioManager: AudioManager
+    private lateinit var audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
+
+    override fun onCreate() {
+        super.onCreate()
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioFocusChangeListener = AudioFocusChangeListener()
+    }
 
     // Player Registry
 
@@ -237,11 +247,32 @@ class VideoPlaybackService : MediaSessionService() {
                 return super.onStartCommand(intent, flags, startId)
             }
 
+            // log here
             val session = mediaSessionsList.values.find { s -> s.player.hashCode() == playerId } ?: return super.onStartCommand(intent, flags, startId)
 
+            // log here
             handleCommand(commandFromString(actionCommand), session)
+            // log here
         }
         return super.onStartCommand(intent, flags, startId)
+    }
+
+    private fun requestAudioFocus(): Boolean {
+        val result = audioManager.requestAudioFocus(
+            audioFocusChangeListener,
+            AudioManager.STREAM_MUSIC,
+            AudioManager.AUDIOFOCUS_GAIN
+        )
+        return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    }
+
+    fun play(session: MediaSession) {
+        DebugLog.w("VPS", "play")
+        val success = requestAudioFocus()
+        if (!success) {
+            DebugLog.w(TAG, "request audio focus failed")
+        }
+        session.player.play()
     }
 
     companion object {
@@ -275,9 +306,39 @@ class VideoPlaybackService : MediaSessionService() {
                 COMMAND.SEEK_BACKWARD -> session.player.seekTo(session.player.contentPosition - SEEK_INTERVAL_MS)
                 COMMAND.SEEK_FORWARD -> session.player.seekTo(session.player.contentPosition + SEEK_INTERVAL_MS)
                 COMMAND.TOGGLE_PLAY -> handleCommand(if (session.player.isPlaying) COMMAND.PAUSE else COMMAND.PLAY, session)
-                COMMAND.PLAY -> session.player.play()
+                COMMAND.PLAY -> (session.sessionActivity as? VideoPlaybackService)?.play(session)
                 COMMAND.PAUSE -> session.player.pause()
                 else -> DebugLog.w(TAG, "Received COMMAND.NONE - was there an error?")
+            }
+        }
+    }
+
+    private inner class AudioFocusChangeListener : AudioManager.OnAudioFocusChangeListener {
+        override fun onAudioFocusChange(focusChange: Int) {
+            when (focusChange) {
+                AudioManager.AUDIOFOCUS_LOSS -> {
+                    // Pause playback
+                    DebugLog.w("VPS:ADCL", "audiofocus loss pause 1")
+                    mediaSessionsList.values.forEach { it.player.pause() }
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                    // Pause playback
+                    DebugLog.w("VPS:ADCL", "loss transient pause 2")
+                    mediaSessionsList.values.forEach { it.player.pause() }
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                    // Lower the volume
+                    DebugLog.w("VPS:ADCL", "audiofocus loss transient can duck")
+                    mediaSessionsList.values.forEach { it.player.volume = 0.5f }
+                }
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    DebugLog.w("VPS:ADCL", "audiofocus gain")
+                    // Resume playback or raise volume
+                    mediaSessionsList.values.forEach { 
+                        it.player.volume = 1.0f
+                        it.player.play()
+                    }
+                }
             }
         }
     }
