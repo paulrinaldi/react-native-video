@@ -29,6 +29,7 @@ class VideoPlaybackService : MediaSessionService() {
     private var mediaSessionsList = mutableMapOf<ExoPlayer, MediaSession>()
     private var binder = PlaybackServiceBinder(this)
     private var sourceActivity: Class<Activity>? = null
+    private val TAG = "VideoPlaybackService"
 
     // Controls for Android 13+ - see buildNotification function
     private val commandSeekForward = SessionCommand(COMMAND.SEEK_FORWARD.stringValue, Bundle.EMPTY)
@@ -73,6 +74,7 @@ class VideoPlaybackService : MediaSessionService() {
 
         mediaSessionsList[player] = mediaSession
         addSession(mediaSession)
+        DebugLog.w(TAG, "finish registerPlayer")
     }
 
     fun unregisterPlayer(player: ExoPlayer) {
@@ -171,6 +173,7 @@ class VideoPlaybackService : MediaSessionService() {
                 togglePlayIntent,
                 PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
+            DebugLog.w("PAUL", "set up playerId play toggle play Intent")
 
             // ACTION FOR COMMAND.SEEK_FORWARD
             val seekForwardIntent = Intent(this, VideoPlaybackService::class.java).apply {
@@ -233,9 +236,11 @@ class VideoPlaybackService : MediaSessionService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        DebugLog.w(TAG, "onStartCommand")
         intent?.let {
             val playerId = it.getIntExtra("PLAYER_ID", -1)
             val actionCommand = it.getStringExtra("ACTION")
+            DebugLog.w(TAG, "actionCommand: " + actionCommand + " playerId: " + playerId)
 
             if (playerId < 0) {
                 DebugLog.w(TAG, "Received Command without playerId")

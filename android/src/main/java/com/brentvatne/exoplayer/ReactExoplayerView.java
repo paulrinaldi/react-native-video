@@ -953,9 +953,10 @@ public class ReactExoplayerView extends FrameLayout implements
 
                 try {
                     Activity currentActivity = themedReactContext.getCurrentActivity();
+                    DebugLog.w(TAG, (audioManager != null ? "audioManager defined" : "no audio manager") + (audioFocusChangeListener != null ? "afCL defined" : "adCL not defined"));
                     if (currentActivity != null) {
                         playbackServiceBinder.getService().registerPlayer(player,
-                                (Class<Activity>) currentActivity.getClass());
+                                (Class<Activity>) currentActivity.getClass(), audioManager, audioFocusChangeListener);
                     } else {
                         // Handle the case where currentActivity is null
                         DebugLog.w(TAG, "Could not register ExoPlayer: currentActivity is null");
@@ -1258,6 +1259,7 @@ public class ReactExoplayerView extends FrameLayout implements
         @Override
         public void onAudioFocusChange(int focusChange) {
             Activity activity = themedReactContext.getCurrentActivity();
+            DebugLog.w(TAG, "onAudioFocusChange:focusChange" + focusChange);
 
             switch (focusChange) {
                 case AudioManager.AUDIOFOCUS_LOSS:
@@ -1267,14 +1269,17 @@ public class ReactExoplayerView extends FrameLayout implements
                     if (activity != null) {
                         activity.runOnUiThread(view::pausePlayback);
                     }
+                    DebugLog.w("VPS:ADCL", "abandon audio focus");
                     view.audioManager.abandonAudioFocus(this);
                     break;
                 case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                    DebugLog.w("VPS:ADCL", "audio loss transient");
                     view.eventEmitter.onAudioFocusChanged.invoke(false);
                     break;
                 case AudioManager.AUDIOFOCUS_GAIN:
                     view.hasAudioFocus = true;
                     view.eventEmitter.onAudioFocusChanged.invoke(true);
+                    DebugLog.w("VPS:ADCL", "audio focus gain");
                     break;
                 default:
                     break;
@@ -1301,6 +1306,7 @@ public class ReactExoplayerView extends FrameLayout implements
     }
 
     private boolean requestAudioFocus() {
+        DebugLog.w(TAG, "requestAudioFocus called");
         if (disableFocus || source.getUri() == null || this.hasAudioFocus) {
             return true;
         }
