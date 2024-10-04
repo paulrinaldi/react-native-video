@@ -8,11 +8,13 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.os.Binder
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.media.AudioManager
 import androidx.core.app.NotificationCompat
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
@@ -30,6 +32,9 @@ class VideoPlaybackService : MediaSessionService() {
     private var binder = PlaybackServiceBinder(this)
     private var sourceActivity: Class<Activity>? = null
     private val TAG = "VideoPlaybackService"
+    private var hasFocus = false
+    private lateinit var audioManager: AudioManager
+    private lateinit var audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
 
     // Controls for Android 13+ - see buildNotification function
     private val commandSeekForward = SessionCommand(COMMAND.SEEK_FORWARD.stringValue, Bundle.EMPTY)
@@ -49,26 +54,18 @@ class VideoPlaybackService : MediaSessionService() {
         .setIconResId(androidx.media3.ui.R.drawable.exo_notification_rewind)
         .build()
 
-    private lateinit var audioManager: AudioManager
-    private lateinit var audioFocusChangeListener: AudioManager.OnAudioFocusChangeListener
-
-    override fun onCreate() {
-        super.onCreate()
-        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        audioFocusChangeListener = AudioFocusChangeListener()
-    }
-
     // Player Registry
-
-    fun registerPlayer(player: ExoPlayer, from: Class<Activity>) {
+    fun registerPlayer(player: ExoPlayer, from: Class<Activity>, sourceAudioManager: AudioManager, sourceAudioFocusChangeListener: AudioManager.OnAudioFocusChangeListener) {
         if (mediaSessionsList.containsKey(player)) {
             return
         }
         sourceActivity = from
+        audioManager = sourceAudioManager
+        audioFocusChangeListener = sourceAudioFocusChangeListener
 
         val mediaSession = MediaSession.Builder(this, player)
             .setId("RNVideoPlaybackService_" + player.hashCode())
-            .setCallback(VideoPlaybackCallback())
+            .setCallback(VideoPlaybackCallback(audioManager))
             .setCustomLayout(immutableListOf(seekForwardBtn, seekBackwardBtn))
             .build()
 
@@ -173,7 +170,7 @@ class VideoPlaybackService : MediaSessionService() {
                 togglePlayIntent,
                 PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
-            DebugLog.w("PAUL", "set up playerId play toggle play Intent")
+            DebugLog.w("VPS:buildNotification", "set up playerId play toggle play Intent")
 
             // ACTION FOR COMMAND.SEEK_FORWARD
             val seekForwardIntent = Intent(this, VideoPlaybackService::class.java).apply {
@@ -262,24 +259,51 @@ class VideoPlaybackService : MediaSessionService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun requestAudioFocus(): Boolean {
-        val result = audioManager.requestAudioFocus(
-            audioFocusChangeListener,
-            AudioManager.STREAM_MUSIC,
-            AudioManager.AUDIOFOCUS_GAIN
-        )
-        return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
-    }
+    // private fun requestAudioFocus(): Boolean {
+    //     val result = audioManager.requestAudioFocus(
+    //         audioFocusChangeListener,
+    //         AudioManager.STREAM_MUSIC,
+    //         AudioManager.AUDIOFOCUS_GAIN
+    //     )
+    //     return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    // }
 
-    fun play(session: MediaSession) {
-        DebugLog.w("VPS", "play")
-        val success = requestAudioFocus()
-        if (!success) {
-            DebugLog.w(TAG, "request audio focus failed")
-        }
-        session.player.play()
-    }
+    // fun play(session: MediaSession) {
+    //     DebugLog.w("VPS", "play")
+    //     val success = requestAudioFocus()
+    //     if (!success) {
+    //         DebugLog.w(TAG, "request audio focus failed")
+    //     }
+    //     session.player.play()
+    // }
 
+    // protected object MyAudioFocusChangeListener(var session: MediaSession) : AudioManager.OnAudioFocusChangeListener {
+    //     override fun onAudioFocusChange(focusChange: Int) {
+    //         when (focusChange) {
+    //             AudioManager.AUDIOFOCUS_LOSS -> {
+    //                 // Pause playback
+    //                 DebugLog.w("VPS:ADCL", "audiofocus loss pause 1")
+    //                 session.player.pause()
+    //             }
+    //             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+    //                 // Pause playback
+    //                 DebugLog.w("VPS:ADCL", "loss transient pause 2")
+    //                 session.player.pause()
+    //             }
+    //             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+    //                 // Lower the volume
+    //                 DebugLog.w("VPS:ADCL", "audiofocus loss transient can duck")
+    //                 session.player.volume = 0.5f
+    //             }
+    //             AudioManager.AUDIOFOCUS_GAIN -> {
+    //                 DebugLog.w("VPS:ADCL", "audiofocus gain")
+    //                 // Resume playback or raise volume
+    //                 session.player.volume = 1.0f
+    //                 session.player.play()
+    //             }
+    //         }
+    //     }
+    // }
     companion object {
         private const val SEEK_INTERVAL_MS = 10000L
         private const val TAG = "VideoPlaybackService"
@@ -311,39 +335,59 @@ class VideoPlaybackService : MediaSessionService() {
                 COMMAND.SEEK_BACKWARD -> session.player.seekTo(session.player.contentPosition - SEEK_INTERVAL_MS)
                 COMMAND.SEEK_FORWARD -> session.player.seekTo(session.player.contentPosition + SEEK_INTERVAL_MS)
                 COMMAND.TOGGLE_PLAY -> handleCommand(if (session.player.isPlaying) COMMAND.PAUSE else COMMAND.PLAY, session)
-                COMMAND.PLAY -> (session.sessionActivity as? VideoPlaybackService)?.play(session)
+                COMMAND.PLAY -> {
+                    // Access audioManager and start playback
+                    val service = session.sessionActivity as? VideoPlaybackService
+                    DebugLog.w("VPS:handleCommand", "SERV:%s,   AM:%s,   AFCL:%s".format(service != null, service?.audioManager != null, service?.audioFocusChangeListener != null))
+                    // val granted = service?.audioManager?.requestAudioFocus(
+                    //     service.audioFocusChangeListener,
+                    //     AudioManager.STREAM_MUSIC, // change this?
+                    //     AudioManager.AUDIOFOCUS_GAIN
+                    // )
+                    val mPlaybackAttributes = AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build()
+                    val mFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                        .setAudioAttributes(mPlaybackAttributes)
+                        // .setAcceptsDelayedFocusGain(true)
+                        .setWillPauseWhenDucked(true)
+                        .setOnAudioFocusChangeListener(object : AudioManager.OnAudioFocusChangeListener {
+                            override fun onAudioFocusChange(focusChange: Int) {
+                                when (focusChange) {
+                                    AudioManager.AUDIOFOCUS_LOSS -> {
+                                        // Pause playback
+                                        DebugLog.w("VPS:ADCL", "audiofocus loss pause 1")
+                                        session.player.pause()
+                                    }
+                                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                                        // Pause playback
+                                        DebugLog.w("VPS:ADCL", "loss transient pause 2")
+                                        session.player.pause()
+                                    }
+                                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                                        // Lower the volume
+                                        DebugLog.w("VPS:ADCL", "audiofocus loss transient can duck")
+                                        session.player.volume = 0.5f
+                                    }
+                                    AudioManager.AUDIOFOCUS_GAIN -> {
+                                        DebugLog.w("VPS:ADCL", "audiofocus gain")
+                                        // Resume playback or raise volume
+                                        session.player.volume = 1.0f
+                                        session.player.play()
+                                    }
+                                }
+                            }
+                        }) // may help with part 2
+                        .build()
+
+                    val granted = service?.audioManager?.requestAudioFocus(mFocusRequest)
+
+                    DebugLog.w("VPS:handleCommand", "granted:" + granted.toString())
+                    session.player.play()
+                }
                 COMMAND.PAUSE -> session.player.pause()
                 else -> DebugLog.w(TAG, "Received COMMAND.NONE - was there an error?")
-            }
-        }
-    }
-
-    private inner class AudioFocusChangeListener : AudioManager.OnAudioFocusChangeListener {
-        override fun onAudioFocusChange(focusChange: Int) {
-            when (focusChange) {
-                AudioManager.AUDIOFOCUS_LOSS -> {
-                    // Pause playback
-                    DebugLog.w("VPS:ADCL", "audiofocus loss pause 1")
-                    mediaSessionsList.values.forEach { it.player.pause() }
-                }
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                    // Pause playback
-                    DebugLog.w("VPS:ADCL", "loss transient pause 2")
-                    mediaSessionsList.values.forEach { it.player.pause() }
-                }
-                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                    // Lower the volume
-                    DebugLog.w("VPS:ADCL", "audiofocus loss transient can duck")
-                    mediaSessionsList.values.forEach { it.player.volume = 0.5f }
-                }
-                AudioManager.AUDIOFOCUS_GAIN -> {
-                    DebugLog.w("VPS:ADCL", "audiofocus gain")
-                    // Resume playback or raise volume
-                    mediaSessionsList.values.forEach { 
-                        it.player.volume = 1.0f
-                        it.player.play()
-                    }
-                }
             }
         }
     }

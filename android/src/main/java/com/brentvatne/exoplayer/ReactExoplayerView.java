@@ -1269,17 +1269,17 @@ public class ReactExoplayerView extends FrameLayout implements
                     if (activity != null) {
                         activity.runOnUiThread(view::pausePlayback);
                     }
-                    DebugLog.w("VPS:ADCL", "abandon audio focus");
-                    view.audioManager.abandonAudioFocus(this);
+                    DebugLog.w("REV:ADCL", "abandon audio focus");
+                    view.audioManager.abandonAudioFocus(this); // This method was deprecated in API level 26. use abandonAudioFocusRequest(android.media.AudioFocusRequest) see https://developer.android.com/reference/android/media/AudioManager
                     break;
                 case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
-                    DebugLog.w("VPS:ADCL", "audio loss transient");
+                    DebugLog.w("REV:ADCL", "audio loss transient");
                     view.eventEmitter.onAudioFocusChanged.invoke(false);
                     break;
                 case AudioManager.AUDIOFOCUS_GAIN:
                     view.hasAudioFocus = true;
                     view.eventEmitter.onAudioFocusChanged.invoke(true);
-                    DebugLog.w("VPS:ADCL", "audio focus gain");
+                    DebugLog.w("REV:ADCL", "audio focus gain");
                     break;
                 default:
                     break;
@@ -1312,7 +1312,7 @@ public class ReactExoplayerView extends FrameLayout implements
         }
         int result = audioManager.requestAudioFocus(audioFocusChangeListener,
                 AudioManager.STREAM_MUSIC,
-                AudioManager.AUDIOFOCUS_GAIN);
+                AudioManager.AUDIOFOCUS_GAIN); // deprecated in api level 26 https://developer.android.com/reference/android/media/AudioManager#requestAudioFocus(android.media.AudioManager.OnAudioFocusChangeListener,%20int,%20int)
         return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
     }
 
