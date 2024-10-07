@@ -65,7 +65,7 @@ class VideoPlaybackService : MediaSessionService() {
 
         val mediaSession = MediaSession.Builder(this, player)
             .setId("RNVideoPlaybackService_" + player.hashCode())
-            .setCallback(VideoPlaybackCallback(audioManager))
+            .setCallback(VideoPlaybackCallback(getSystemService(Context.AUDIO_SERVICE) as AudioManager))
 //            .setActive(true) // unresoled reference
             .setCustomLayout(immutableListOf(seekForwardBtn, seekBackwardBtn))
             .build()
@@ -254,7 +254,7 @@ class VideoPlaybackService : MediaSessionService() {
             val session = mediaSessionsList.values.find { s -> s.player.hashCode() == playerId } ?: return super.onStartCommand(intent, flags, startId)
 
             // log here
-            handleCommand(commandFromString(actionCommand), session)
+            handleCommand(commandFromString(actionCommand), session, getSystemService(Context.AUDIO_SERVICE) as AudioManager)
             // log here
         }
         return super.onStartCommand(intent, flags, startId)
@@ -329,13 +329,13 @@ class VideoPlaybackService : MediaSessionService() {
                 COMMAND.PAUSE.stringValue -> COMMAND.PAUSE
                 else -> COMMAND.NONE
             }
-        fun handleCommand(command: COMMAND, session: MediaSession) {
+        fun handleCommand(command: COMMAND, session: MediaSession, kotlinAudioManager: AudioManager) {
             // TODO: get somehow ControlsConfig here - for now hardcoded 10000ms
 
             when (command) {
                 COMMAND.SEEK_BACKWARD -> session.player.seekTo(session.player.contentPosition - SEEK_INTERVAL_MS)
                 COMMAND.SEEK_FORWARD -> session.player.seekTo(session.player.contentPosition + SEEK_INTERVAL_MS)
-                COMMAND.TOGGLE_PLAY -> handleCommand(if (session.player.isPlaying) COMMAND.PAUSE else COMMAND.PLAY, session)
+                COMMAND.TOGGLE_PLAY -> handleCommand(if (session.player.isPlaying) COMMAND.PAUSE else COMMAND.PLAY, session, kotlinAudioManager)
                 COMMAND.PLAY -> {
                     // Access audioManager and start playback
                     val service = session.sessionActivity as? VideoPlaybackService
@@ -383,7 +383,6 @@ class VideoPlaybackService : MediaSessionService() {
                         .build()
 
                     if (service != null && service.audioManager != null) {
-                        val kotlinAudioManager: AudioManager = Context.getSystemService(AudioManager::class.java)
                         val granted: Int = kotlinAudioManager.requestAudioFocus(mFocusRequest)
                         DebugLog.w("VPS:handleCommand", "granted:" + granted.toString())
                     } else {

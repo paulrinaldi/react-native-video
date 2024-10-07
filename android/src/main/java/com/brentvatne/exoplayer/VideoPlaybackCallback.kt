@@ -4,6 +4,7 @@ import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.os.Bundle
+import android.content.Context
 import androidx.media3.common.Player
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
@@ -15,7 +16,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.brentvatne.common.toolbox.DebugLog
 
 
-class VideoPlaybackCallback() : MediaSession.Callback {
+class VideoPlaybackCallback(var audioManager: AudioManager) : MediaSession.Callback {
     override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
         DebugLog.w("VideoPlaybackCallback", "onConnect")
         try {
@@ -78,7 +79,7 @@ class VideoPlaybackCallback() : MediaSession.Callback {
         args: Bundle
     ): ListenableFuture<SessionResult> {
         DebugLog.w("VideoPlaybackCallback", "onCustomCommand")
-        handleCommand(commandFromString(customCommand.customAction), session)
+        handleCommand(commandFromString(customCommand.customAction), session, audioManager)
         return super.onCustomCommand(session, controller, customCommand, args)
     }
 }
