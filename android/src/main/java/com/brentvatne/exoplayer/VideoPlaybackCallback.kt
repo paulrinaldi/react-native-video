@@ -15,7 +15,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.brentvatne.common.toolbox.DebugLog
 
 
-class VideoPlaybackCallback(var audioManager: AudioManager) : MediaSession.Callback {
+class VideoPlaybackCallback() : MediaSession.Callback {
     override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
         DebugLog.w("VideoPlaybackCallback", "onConnect")
         try {
@@ -37,39 +37,39 @@ class VideoPlaybackCallback(var audioManager: AudioManager) : MediaSession.Callb
         }
     }
 
-    // override fun onPlay() {
-    //     DebugLog.w("VideoPlaybackCallback", "play")
-    //     val audioAttributes: AudioAttributes = AudioAttributes.Builder()
-    //         .setUsage(AudioAttributes.USAGE_MEDIA)
-    //         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-    //         .build()
+    fun onPlay() {
+        DebugLog.w("VideoPlaybackCallback", "play")
+        val audioAttributes: AudioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
 
-    //     val audioFocusRequest: AudioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-    //         .setAudioAttributes(audioAttributes)
-    //         // .setOnAudioFocusChangeListener(audioFocusChangeListener) // Handle audio focus changes
-    //         .build()
+        val audioFocusRequest: AudioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(audioAttributes)
+            // .setOnAudioFocusChangeListener(audioFocusChangeListener) // Handle audio focus changes
+            .build()
 
-    //     // Request audio focus here
-    //     if (this.audioManager.requestAudioFocus(audioFocusRequest) === AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-    //         // Start playback
-    //     }
-    // }
+        // Request audio focus here
+//        if (this.audioManager.requestAudioFocus(audioFocusRequest) === AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            // Start playback
+//        }
+    }
 
-    // override fun onPause() {
-    //     DebugLog.w("VideoPlaybackCallback", "pause")
-    //     val audioAttributes: AudioAttributes = AudioAttributes.Builder()
-    //         .setUsage(AudioAttributes.USAGE_MEDIA)
-    //         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-    //         .build()
+    fun onPause() {
+        DebugLog.w("VideoPlaybackCallback", "pause")
+        val audioAttributes: AudioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
 
-    //     val audioFocusRequest: AudioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-    //         .setAudioAttributes(audioAttributes)
-    //         // .setOnAudioFocusChangeListener(audioFocusChangeListener) // Handle audio focus changes
-    //         .build()
+        val audioFocusRequest: AudioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(audioAttributes)
+            // .setOnAudioFocusChangeListener(audioFocusChangeListener) // Handle audio focus changes
+            .build()
 
-    //     // Handle pause, release audio focus if needed
-    //     audioManager.abandonAudioFocusRequest(audioFocusRequest)
-    // }
+        // Handle pause, release audio focus if needed
+//        audioManager.abandonAudioFocusRequest(audioFocusRequest)
+    }
 
     override fun onCustomCommand(
         session: MediaSession,

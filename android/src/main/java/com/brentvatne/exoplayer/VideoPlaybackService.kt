@@ -60,12 +60,13 @@ class VideoPlaybackService : MediaSessionService() {
             return
         }
         sourceActivity = from
-        audioManager = sourceAudioManager
+//        audioManager = sourceAudioManager
         audioFocusChangeListener = sourceAudioFocusChangeListener
 
         val mediaSession = MediaSession.Builder(this, player)
             .setId("RNVideoPlaybackService_" + player.hashCode())
             .setCallback(VideoPlaybackCallback(audioManager))
+//            .setActive(true) // unresoled reference
             .setCustomLayout(immutableListOf(seekForwardBtn, seekBackwardBtn))
             .build()
 
@@ -381,9 +382,14 @@ class VideoPlaybackService : MediaSessionService() {
                         }) // may help with part 2
                         .build()
 
-                    val granted = service?.audioManager?.requestAudioFocus(mFocusRequest)
+                    if (service != null && service.audioManager != null) {
+                        val kotlinAudioManager: AudioManager = Context.getSystemService(AudioManager::class.java)
+                        val granted: Int = kotlinAudioManager.requestAudioFocus(mFocusRequest)
+                        DebugLog.w("VPS:handleCommand", "granted:" + granted.toString())
+                    } else {
+                        DebugLog.w("VPS:handleCommand", "service and audioManager not defined")
+                    }
 
-                    DebugLog.w("VPS:handleCommand", "granted:" + granted.toString())
                     session.player.play()
                 }
                 COMMAND.PAUSE -> session.player.pause()
