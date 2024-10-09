@@ -15,6 +15,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.media.AudioManager;
+import android.media.AudioFocusRequest;
+import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -32,7 +34,6 @@ import android.widget.TextView;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.WorkerThread;
-import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
 import androidx.media3.common.Format;
 import androidx.media3.common.MediaItem;
@@ -1270,7 +1271,20 @@ public class ReactExoplayerView extends FrameLayout implements
                         activity.runOnUiThread(view::pausePlayback);
                     }
                     DebugLog.w("REV:ADCL", "abandon audio focus");
-                    view.audioManager.abandonAudioFocus(this); // This method was deprecated in API level 26. use abandonAudioFocusRequest(android.media.AudioFocusRequest) see https://developer.android.com/reference/android/media/AudioManager
+                    
+                    AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build();
+
+                    AudioFocusRequest audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                        .setAudioAttributes(audioAttributes)
+                        .setOnAudioFocusChangeListener(this) // Handle audio focus changes
+                        .build();
+                    view.audioManager.abandonAudioFocusRequest(audioFocusRequest);
+                    view.player.pause();
+                    DebugLog.w("REV:ADCL", "view.plauer.pause() called");
+
                     break;
                 case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                     DebugLog.w("REV:ADCL", "audio loss transient");
@@ -1310,9 +1324,19 @@ public class ReactExoplayerView extends FrameLayout implements
         if (disableFocus || source.getUri() == null || this.hasAudioFocus) {
             return true;
         }
-        int result = audioManager.requestAudioFocus(audioFocusChangeListener,
-                AudioManager.STREAM_MUSIC,
-                AudioManager.AUDIOFOCUS_GAIN); // deprecated in api level 26 https://developer.android.com/reference/android/media/AudioManager#requestAudioFocus(android.media.AudioManager.OnAudioFocusChangeListener,%20int,%20int)
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build();
+
+        AudioFocusRequest audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(audioAttributes)
+            .setOnAudioFocusChangeListener(audioFocusChangeListener) // Handle audio focus changes
+            .build();
+        int result = audioManager.requestAudioFocus(audioFocusRequest);
+
+        DebugLog.w(TAG, "granted:" + result);
+
         return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
     }
 
@@ -1322,18 +1346,23 @@ public class ReactExoplayerView extends FrameLayout implements
         }
 
         if (playWhenReady) {
-            this.hasAudioFocus = requestAudioFocus();
-            if (this.hasAudioFocus) {
-                player.setPlayWhenReady(true);
-            }
+            DebugLog.w(TAG, "setPlayWhenReady calling requestAudioFocus()");
+            // this.hasAudioFocus = requestAudioFocus();
+            // if (this.hasAudioFocus) {
+            DebugLog.w(TAG, "setting play when ready to true");
+            player.setPlayWhenReady(true);
+            // }
         } else {
             player.setPlayWhenReady(false);
         }
     }
 
     private void resumePlayback() {
+        DebugLog.w(TAG, "resumePlayback() called");
         if (player != null) {
+            DebugLog.w(TAG, "player is not null continuing");
             if (!player.getPlayWhenReady()) {
+                DebugLog.w(TAG, "setPlayWhenReady to true");
                 setPlayWhenReady(true);
             }
             setKeepScreenOn(preventsDisplaySleepDuringVideoPlayback);
@@ -1355,7 +1384,16 @@ public class ReactExoplayerView extends FrameLayout implements
     }
 
     private void onStopPlayback() {
-        audioManager.abandonAudioFocus(audioFocusChangeListener);
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build();
+
+        AudioFocusRequest audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(audioAttributes)
+            .setOnAudioFocusChangeListener(audioFocusChangeListener) // Handle audio focus changes
+            .build();
+        audioManager.abandonAudioFocusRequest(audioFocusRequest);
     }
 
     private void updateResumePosition() {
@@ -2197,10 +2235,11 @@ public class ReactExoplayerView extends FrameLayout implements
             int streamType = output.getStreamType();
             int usage = Util.getAudioUsageForStreamType(streamType);
             int contentType = Util.getAudioContentTypeForStreamType(streamType);
-            AudioAttributes audioAttributes = new AudioAttributes.Builder().setUsage(usage)
+
+            androidx.media3.common.AudioAttributes audioAttributes = new androidx.media3.common.AudioAttributes.Builder().setUsage(usage)
                     .setContentType(contentType)
                     .build();
-            player.setAudioAttributes(audioAttributes, false);
+            player.setAudioAttributes(audioAttributes, true);
             AudioManager audioManager = (AudioManager) themedReactContext.getSystemService(Context.AUDIO_SERVICE);
             boolean isSpeakerOutput = output == AudioOutput.SPEAKER;
             audioManager.setMode(

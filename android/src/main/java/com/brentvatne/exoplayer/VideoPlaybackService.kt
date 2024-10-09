@@ -331,6 +331,7 @@ class VideoPlaybackService : MediaSessionService() {
             }
         fun handleCommand(command: COMMAND, session: MediaSession, kotlinAudioManager: AudioManager) {
             // TODO: get somehow ControlsConfig here - for now hardcoded 10000ms
+            DebugLog.w("VPS", "handleCommand called")
 
             when (command) {
                 COMMAND.SEEK_BACKWARD -> session.player.seekTo(session.player.contentPosition - SEEK_INTERVAL_MS)
@@ -347,7 +348,7 @@ class VideoPlaybackService : MediaSessionService() {
                     // )
                     val mPlaybackAttributes = AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
                         .build()
                     val mFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
                         .setAudioAttributes(mPlaybackAttributes)
@@ -389,6 +390,7 @@ class VideoPlaybackService : MediaSessionService() {
                         DebugLog.w("VPS:handleCommand", "service and audioManager not defined")
                     }
 
+                    DebugLog.w("VPS", "resumePlayback() called");
                     session.player.play()
                 }
                 COMMAND.PAUSE -> session.player.pause()
